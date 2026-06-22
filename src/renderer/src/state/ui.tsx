@@ -68,6 +68,7 @@ interface AppContextValue {
   openFolder: () => Promise<void>
   openRecent: (path: string) => Promise<void>
   updateMeta: (patch: Partial<ProjectMeta>) => void
+  importLogo: () => Promise<void>
   editManifest: (fn: (current: ProjectManifest) => ProjectManifest) => void
 
   // provedor de IA
@@ -192,6 +193,15 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     [editManifest]
   )
 
+  // Importa um logo para .project/ no projeto e guarda o caminho no manifesto.
+  const importLogo = useCallback(async (): Promise<void> => {
+    if (!projectDir) return
+    const result = await window.kickoff.project.importLogo(projectDir)
+    if (result.path) {
+      editManifest((current) => ({ ...current, meta: { ...current.meta, logo: result.path! } }))
+    }
+  }, [projectDir, editManifest])
+
   const setProvider = useCallback(async (provider: ProviderId, model?: string): Promise<void> => {
     const config: ProviderConfig = { provider, model: model ?? PROVIDERS[provider].models[0] }
     await window.kickoff.settings.setProvider(config)
@@ -277,6 +287,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       openFolder,
       openRecent,
       updateMeta,
+      importLogo,
       editManifest,
       providerConfig,
       hasKey,
@@ -306,6 +317,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       openFolder,
       openRecent,
       updateMeta,
+      importLogo,
       editManifest,
       providerConfig,
       hasKey,

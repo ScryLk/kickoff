@@ -21,7 +21,8 @@ const kickoff: KickoffApi = {
       ipcRenderer.invoke(IpcChannels.projectSaveManifest, dir, manifest),
     validate: (manifest: unknown) => ipcRenderer.invoke(IpcChannels.projectValidate, manifest),
     writeArtifact: (dir: string, filename: string, content: string) =>
-      ipcRenderer.invoke(IpcChannels.projectWriteArtifact, dir, filename, content)
+      ipcRenderer.invoke(IpcChannels.projectWriteArtifact, dir, filename, content),
+    importLogo: (dir: string) => ipcRenderer.invoke(IpcChannels.projectImportLogo, dir)
   },
   settings: {
     getProvider: () => ipcRenderer.invoke(IpcChannels.settingsGetProvider),

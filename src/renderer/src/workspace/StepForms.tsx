@@ -1,5 +1,5 @@
 import { type ProjectManifest } from '@core/schema'
-import { colors } from '../theme'
+import { colors, fonts } from '../theme'
 import { useApp } from '../state/ui'
 import { TextField, TextAreaField, ListField } from './fields'
 import { AiAssistButton } from './AiAssistButton'
@@ -21,7 +21,7 @@ function prune<T extends object>(obj: T): T | undefined {
 }
 
 function MetaForm(): React.JSX.Element {
-  const { manifest, updateMeta, validation } = useApp()
+  const { manifest, updateMeta, validation, importLogo } = useApp()
   if (!manifest) return <></>
   const nameInvalid = !manifest.meta.name?.trim() && validation != null && !validation.valid
 
@@ -103,6 +103,67 @@ function MetaForm(): React.JSX.Element {
         placeholder="MIT"
         onChange={(v) => updateMeta({ license: v })}
       />
+
+      {/* logo: caminho de arquivo, nunca base64 (princípio nº5) */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <label style={{ fontSize: 13, fontWeight: 600, color: colors.offWhite }}>Logo</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            style={{
+              flex: 1,
+              padding: '11px 13px',
+              borderRadius: 9,
+              background: colors.ink,
+              border: `1px solid ${colors.borderField}`,
+              fontFamily: fonts.mono,
+              fontSize: 12.5,
+              color: manifest.meta.logo ? colors.offWhite : 'rgba(243,238,232,0.35)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {manifest.meta.logo ?? 'nenhum logo'}
+          </span>
+          <button
+            onClick={() => void importLogo()}
+            style={{
+              flex: 'none',
+              padding: '11px 14px',
+              borderRadius: 9,
+              border: `1px solid ${colors.borderStrong}`,
+              background: colors.surface,
+              color: colors.offWhite,
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            Escolher imagem…
+          </button>
+          {manifest.meta.logo && (
+            <button
+              onClick={() => updateMeta({ logo: undefined })}
+              style={{
+                flex: 'none',
+                padding: '11px 13px',
+                borderRadius: 9,
+                border: `1px solid ${colors.borderStrong}`,
+                background: 'transparent',
+                color: 'rgba(243,238,232,0.6)',
+                fontSize: 12.5,
+                cursor: 'pointer'
+              }}
+            >
+              Remover
+            </button>
+          )}
+        </div>
+        <span style={{ fontSize: 11.5, color: 'rgba(243,238,232,0.4)' }}>
+          Copiado para <span style={{ fontFamily: fonts.mono }}>.project/</span> no projeto; o
+          manifesto guarda só o caminho.
+        </span>
+      </div>
     </div>
   )
 }

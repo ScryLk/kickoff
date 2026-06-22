@@ -1,10 +1,11 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron'
-import { join, dirname } from 'path'
-import { readFile, writeFile, mkdir } from 'fs/promises'
+import { join, dirname, extname } from 'path'
+import { readFile, writeFile, mkdir, copyFile } from 'fs/promises'
 import { validateManifest, type ProjectManifest } from '@core'
 import {
   IpcChannels,
   MANIFEST_FILENAME,
+  type ImportLogoResult,
   type OpenFolderResult,
   type ReadManifestResult,
   type SaveManifestResult,
@@ -93,6 +94,37 @@ export function registerProjectHandlers(): void {
         return { saved: true, path: file }
       } catch (error) {
         return { saved: false, error: (error as Error).message }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IpcChannels.projectImportLogo,
+    async (_event, dir: string): Promise<ImportLogoResult> => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+      const opts: Electron.OpenDialogOptions = {
+        properties: ['openFile'],
+        filters: [{ name: 'Imagens', extensions: ['png', 'jpg', 'jpeg', 'svg', 'webp'] }]
+      }
+      const result = win
+        ? await dialog.showOpenDialog(win, opts)
+        : await dialog.showOpenDialog(opts)
+      if (result.canceled || result.filePaths.length === 0) {
+        return { path: null }
+      }
+      try {
+        const source = result.filePaths[0]
+        // Princípio nº5: logo entra como caminho de arquivo, nunca base64.
+        // Copiamos para .project/logo.<ext> dentro do projeto e guardamos o
+        // caminho relativo no manifesto.
+        const ext = extname(source).toLowerCase() || '.png'
+        const relative = `.project/logo${ext}`
+        const dest = join(dir, relative)
+        await mkdir(dirname(dest), { recursive: true })
+        await copyFile(source, dest)
+        return { path: relative }
+      } catch (error) {
+        return { path: null, error: (error as Error).message }
       }
     }
   )

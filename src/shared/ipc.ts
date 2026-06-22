@@ -15,6 +15,7 @@ export const IpcChannels = {
   projectSaveManifest: 'project:save-manifest',
   projectValidate: 'project:validate',
   projectWriteArtifact: 'project:write-artifact',
+  projectImportLogo: 'project:import-logo',
   settingsGetProvider: 'settings:get-provider',
   settingsSetProvider: 'settings:set-provider',
   settingsGetRecents: 'settings:get-recents',
@@ -87,6 +88,14 @@ export interface ProviderConfig {
   baseUrl?: string
 }
 
+/** Resultado de importar um logo para o projeto. */
+export interface ImportLogoResult {
+  /** Caminho relativo do logo no projeto (ex.: `.project/logo.png`), ou null se cancelado. */
+  path: string | null
+  /** Mensagem de erro de I/O, se houver. */
+  error?: string
+}
+
 /** Pedido de completude de IA (assistência "me ajuda a preencher"). */
 export interface AiCompleteRequest {
   /** Instrução de sistema opcional. */
@@ -124,6 +133,7 @@ export interface KickoffApi {
     saveManifest: (dir: string, manifest: ProjectManifest) => Promise<SaveManifestResult>
     validate: (manifest: unknown) => Promise<ManifestValidationResult>
     writeArtifact: (dir: string, filename: string, content: string) => Promise<WriteArtifactResult>
+    importLogo: (dir: string) => Promise<ImportLogoResult>
   }
   settings: {
     getProvider: () => Promise<ProviderConfig | null>
