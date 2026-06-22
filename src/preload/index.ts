@@ -1,7 +1,12 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type { ProjectManifest } from '@core'
-import { IpcChannels, type KickoffApi, type ProviderConfig } from '@shared/ipc'
+import {
+  IpcChannels,
+  type AiCompleteRequest,
+  type KickoffApi,
+  type ProviderConfig
+} from '@shared/ipc'
 import type { ProviderId } from '@shared/providers'
 
 /**
@@ -32,6 +37,9 @@ const kickoff: KickoffApi = {
     clearKey: (provider: ProviderId) => ipcRenderer.invoke(IpcChannels.secretsClearKey, provider),
     testConnection: (config: ProviderConfig) =>
       ipcRenderer.invoke(IpcChannels.secretsTestConnection, config)
+  },
+  ai: {
+    complete: (request: AiCompleteRequest) => ipcRenderer.invoke(IpcChannels.aiComplete, request)
   }
 }
 

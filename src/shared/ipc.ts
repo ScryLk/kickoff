@@ -22,7 +22,8 @@ export const IpcChannels = {
   secretsHasKey: 'secrets:has-key',
   secretsSetKey: 'secrets:set-key',
   secretsClearKey: 'secrets:clear-key',
-  secretsTestConnection: 'secrets:test-connection'
+  secretsTestConnection: 'secrets:test-connection',
+  aiComplete: 'ai:complete'
 } as const
 
 /** Nome do arquivo de manifesto na raiz do projeto-alvo. */
@@ -86,6 +87,24 @@ export interface ProviderConfig {
   baseUrl?: string
 }
 
+/** Pedido de completude de IA (assistência "me ajuda a preencher"). */
+export interface AiCompleteRequest {
+  /** Instrução de sistema opcional. */
+  system?: string
+  /** Mensagem do usuário com o contexto + o que gerar. */
+  prompt: string
+}
+
+/** Resultado de uma completude de IA. */
+export interface AiCompleteResult {
+  /** `true` se o provedor respondeu com texto. */
+  ok: boolean
+  /** Texto gerado (quando `ok`). */
+  text?: string
+  /** Mensagem de erro (quando falha). */
+  error?: string
+}
+
 /** Resultado de um teste de conexão com o provedor. */
 export interface TestConnectionResult {
   /** `true` se a chamada mínima ao provedor teve sucesso. */
@@ -117,5 +136,8 @@ export interface KickoffApi {
     setKey: (provider: ProviderId, key: string) => Promise<void>
     clearKey: (provider: ProviderId) => Promise<void>
     testConnection: (config: ProviderConfig) => Promise<TestConnectionResult>
+  }
+  ai: {
+    complete: (request: AiCompleteRequest) => Promise<AiCompleteResult>
   }
 }

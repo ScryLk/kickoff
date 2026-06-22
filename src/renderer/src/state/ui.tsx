@@ -20,7 +20,12 @@ import {
 import { MANIFEST_VERSION, type ProjectManifest, type ProjectMeta } from '@core/schema'
 import { type ManifestValidationResult } from '@core/validation'
 import { PROVIDERS, type ProviderId } from '@shared/providers'
-import { type ProviderConfig, type RecentProject, type TestConnectionResult } from '@shared/ipc'
+import {
+  type AiCompleteRequest,
+  type ProviderConfig,
+  type RecentProject,
+  type TestConnectionResult
+} from '@shared/ipc'
 
 /** Telas principais do app. */
 export type Screen = 'home' | 'workspace' | 'onboarding'
@@ -75,6 +80,7 @@ interface AppContextValue {
   saveApiKey: (key: string) => Promise<void>
   clearApiKey: () => Promise<void>
   runTest: () => Promise<void>
+  suggest: (request: AiCompleteRequest) => Promise<string>
 }
 
 const AppContext = createContext<AppContextValue | null>(null)
@@ -226,6 +232,16 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     setTestMessage(result.message)
   }, [providerConfig])
 
+  // Assistência por IA: chamada explícita (só por clique), com a chave do
+  // usuário. Lança em caso de falha para o componente sinalizar.
+  const suggest = useCallback(async (request: AiCompleteRequest): Promise<string> => {
+    const result = await window.kickoff.ai.complete(request)
+    if (!result.ok || !result.text) {
+      throw new Error(result.error ?? 'Falha na assistência por IA.')
+    }
+    return result.text
+  }, [])
+
   const aiConfigured =
     providerConfig != null && (!PROVIDERS[providerConfig.provider].requiresApiKey || hasKey)
 
@@ -270,7 +286,8 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       setProvider,
       saveApiKey,
       clearApiKey,
-      runTest
+      runTest,
+      suggest
     }),
     [
       screen,
@@ -298,7 +315,8 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       setProvider,
       saveApiKey,
       clearApiKey,
-      runTest
+      runTest,
+      suggest
     ]
   )
 

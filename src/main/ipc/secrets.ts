@@ -21,7 +21,7 @@ function ensureEncryptionAvailable(): void {
 }
 
 /** Recupera a chave em claro de um provedor; só usado dentro do main. */
-async function getDecryptedKey(provider: ProviderId): Promise<string | null> {
+export async function getDecryptedKey(provider: ProviderId): Promise<string | null> {
   const secrets = await readSecrets()
   const encrypted = secrets[provider]
   if (!encrypted) return null

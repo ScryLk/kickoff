@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { colors, fonts, ink, radius } from '../theme'
 
 const labelStyle: CSSProperties = { fontSize: 13, fontWeight: 600, color: colors.offWhite }
@@ -15,11 +15,24 @@ const inputBase: CSSProperties = {
   outline: 'none'
 }
 
+function LabelRow({ label, action }: { label: string; action?: ReactNode }): React.JSX.Element {
+  if (!action) {
+    return <label style={labelStyle}>{label}</label>
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <label style={labelStyle}>{label}</label>
+      {action}
+    </div>
+  )
+}
+
 interface FieldProps {
   label: string
   hint?: string
   value: string
   placeholder?: string
+  action?: ReactNode
   onChange: (value: string) => void
 }
 
@@ -29,11 +42,12 @@ export function TextField({
   hint,
   value,
   placeholder,
+  action,
   onChange
 }: FieldProps): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <label style={labelStyle}>{label}</label>
+      <LabelRow label={label} action={action} />
       <input
         value={value}
         placeholder={placeholder}
@@ -56,11 +70,12 @@ export function TextAreaField({
   value,
   placeholder,
   rows = 3,
+  action,
   onChange
 }: TextAreaProps): React.JSX.Element {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <label style={labelStyle}>{label}</label>
+      <LabelRow label={label} action={action} />
       <textarea
         value={value}
         rows={rows}
@@ -78,6 +93,7 @@ interface ListFieldProps {
   hint?: string
   items: string[]
   placeholder?: string
+  action?: ReactNode
   onChange: (items: string[]) => void
 }
 
@@ -87,6 +103,7 @@ export function ListField({
   hint,
   items,
   placeholder,
+  action,
   onChange
 }: ListFieldProps): React.JSX.Element {
   const [text, setText] = useState(items.join('\n'))
@@ -103,7 +120,7 @@ export function ListField({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-      <label style={labelStyle}>{label}</label>
+      <LabelRow label={label} action={action} />
       <textarea
         value={text}
         rows={4}

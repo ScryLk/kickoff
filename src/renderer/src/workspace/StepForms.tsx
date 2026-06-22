@@ -57,7 +57,16 @@ function MetaForm(): React.JSX.Element {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <label style={{ fontSize: 13, fontWeight: 600, color: colors.offWhite }}>Descrição</label>
-          <AiAssistButton />
+          <AiAssistButton
+            onRun={async (suggest) => {
+              const text = await suggest({
+                system:
+                  'Você ajuda a documentar projetos de software. Responda em português, sem preâmbulo.',
+                prompt: `Escreva uma descrição de uma ou duas frases para um projeto chamado "${manifest.meta.name || 'sem nome'}". Responda só com a descrição.`
+              })
+              updateMeta({ description: text })
+            }}
+          />
         </div>
         <textarea
           value={manifest.meta.description ?? ''}
@@ -159,6 +168,18 @@ function EstruturaForm(): React.JSX.Element {
         hint="Resumo da arquitetura."
         value={arch?.overview ?? ''}
         onChange={(v) => patch({ overview: v })}
+        action={
+          <AiAssistButton
+            onRun={async (suggest) => {
+              const text = await suggest({
+                system:
+                  'Você ajuda a documentar a arquitetura de projetos de software. Responda em português, sem preâmbulo.',
+                prompt: `Escreva um resumo curto (2-3 frases) da arquitetura de um projeto chamado "${manifest?.meta.name || 'sem nome'}"${manifest?.meta.description ? `: ${manifest.meta.description}` : ''}. Responda só com o resumo.`
+              })
+              patch({ overview: text })
+            }}
+          />
+        }
       />
       <TextAreaField
         label="Estrutura de pastas"
