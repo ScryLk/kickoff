@@ -1,5 +1,5 @@
 import { colors } from './theme'
-import { UiStateProvider, useUi } from './state/ui'
+import { AppProvider, useApp } from './state/ui'
 import { TitleBar } from './components/TitleBar'
 import { SettingsModal } from './components/SettingsModal'
 import { HomeScreen } from './screens/HomeScreen'
@@ -7,7 +7,7 @@ import { WorkspaceScreen } from './screens/WorkspaceScreen'
 import { OnboardingScreen } from './screens/OnboardingScreen'
 
 function Shell(): React.JSX.Element {
-  const { screen, settingsOpen } = useUi()
+  const { screen, settingsOpen } = useApp()
 
   return (
     <div
@@ -31,9 +31,9 @@ function Shell(): React.JSX.Element {
 
 function App(): React.JSX.Element {
   return (
-    <UiStateProvider>
+    <AppProvider>
       <Shell />
-    </UiStateProvider>
+    </AppProvider>
   )
 }
 

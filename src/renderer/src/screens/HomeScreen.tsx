@@ -1,7 +1,7 @@
 import { colors, fonts, ink, radius } from '../theme'
 import { KickoffMark } from '../components/Logo'
 import { Button } from '../components/ui'
-import { useUi } from '../state/ui'
+import { useApp } from '../state/ui'
 
 interface Recent {
   name: string
@@ -17,7 +17,7 @@ const RECENTS: Recent[] = [
 ]
 
 export function HomeScreen(): React.JSX.Element {
-  const { setScreen, openSettings } = useUi()
+  const { openFolder, openSettings } = useApp()
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -54,14 +54,14 @@ export function HomeScreen(): React.JSX.Element {
           <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
             <Button
               variant="primary"
-              onClick={() => setScreen('workspace')}
+              onClick={() => void openFolder()}
               style={{ padding: '12px 20px' }}
             >
               <span style={{ fontSize: 15 }}>＋</span> Novo projeto
             </Button>
             <Button
               variant="secondary"
-              onClick={() => setScreen('workspace')}
+              onClick={() => void openFolder()}
               style={{ padding: '12px 20px' }}
             >
               <span style={{ fontSize: 15, opacity: 0.8 }}>⊞</span> Abrir pasta…
@@ -110,7 +110,7 @@ export function HomeScreen(): React.JSX.Element {
             {RECENTS.map((r) => (
               <button
                 key={r.path}
-                onClick={() => setScreen('workspace')}
+                onClick={() => void openFolder()}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',

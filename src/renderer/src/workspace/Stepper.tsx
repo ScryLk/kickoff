@@ -1,7 +1,8 @@
 import { type CSSProperties } from 'react'
 import { colors, fonts, ink, radius } from '../theme'
-import { useUi } from '../state/ui'
+import { useApp } from '../state/ui'
 import { STEPS } from './steps'
+import { stepCompletion } from './completion'
 
 const badgeBase: CSSProperties = {
   flex: 'none',
@@ -17,11 +18,10 @@ const badgeBase: CSSProperties = {
 
 /** Coluna esquerda do workspace: progresso + lista de passos. */
 export function Stepper(): React.JSX.Element {
-  const { selectedStep, setSelectedStep, openSettings } = useUi()
+  const { selectedStep, setSelectedStep, openSettings, manifest } = useApp()
 
-  // Sem passos concluídos ainda nesta casca; a Fase 4 deriva isso do manifesto.
-  const doneCount = 0
-  const currentIndex = 0
+  const completed = stepCompletion(manifest)
+  const doneCount = completed.filter(Boolean).length
   const progressLabel = `${doneCount} de ${STEPS.length}`
   const progressPct = `${Math.round((doneCount / STEPS.length) * 100)}%`
 
@@ -74,7 +74,8 @@ export function Stepper(): React.JSX.Element {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '4px 12px' }}>
         {STEPS.map((step, i) => {
-          const status = i < doneCount ? 'done' : i === currentIndex ? 'current' : 'pending'
+          const firstIncomplete = completed.findIndex((c) => !c)
+          const status = completed[i] ? 'done' : i === firstIncomplete ? 'current' : 'pending'
           const selected = i === selectedStep
 
           const badgeStyle: CSSProperties =

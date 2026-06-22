@@ -1,4 +1,5 @@
-import { type ManifestValidationResult, type ProjectManifest } from '@core'
+import { type ProjectManifest } from '@core/schema'
+import { type ManifestValidationResult } from '@core/validation'
 import { type ProviderId } from './providers'
 
 /**

@@ -1,6 +1,6 @@
 import { type CSSProperties } from 'react'
 import { colors, fonts, ink } from '../theme'
-import { useUi } from '../state/ui'
+import { useApp } from '../state/ui'
 
 interface AiAssistButtonProps {
   /** Tamanho do botão. */
@@ -12,7 +12,7 @@ interface AiAssistButtonProps {
  * provedor/chave configurado — a assistência por IA é opt-in e explícita.
  */
 export function AiAssistButton({ size = 'sm' }: AiAssistButtonProps): React.JSX.Element {
-  const { aiConfigured } = useUi()
+  const { aiConfigured } = useApp()
   const disabled = !aiConfigured
   const tip = disabled ? 'Configure um provedor em Configurações' : 'Sugerir com IA'
 

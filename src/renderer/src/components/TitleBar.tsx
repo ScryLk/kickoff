@@ -1,7 +1,7 @@
 import { type CSSProperties } from 'react'
 import { colors, fonts, ink } from '../theme'
 import { KickoffMark } from './Logo'
-import { useUi, type Seal } from '../state/ui'
+import { useApp, type Seal } from '../state/ui'
 
 interface SealStyle {
   label: string
@@ -51,8 +51,8 @@ const gearStyle: CSSProperties = {
 
 /** Barra de título do app: marca, projeto + selo do manifesto e atalho de configurações. */
 export function TitleBar(): React.JSX.Element {
-  const { screen, seal, openSettings } = useUi()
-  const showProjectMeta = screen === 'workspace'
+  const { screen, seal, openSettings, manifest } = useApp()
+  const showProjectMeta = screen === 'workspace' && manifest != null
   const s = SEALS[seal]
 
   return (
@@ -92,7 +92,9 @@ export function TitleBar(): React.JSX.Element {
             marginLeft: 22
           }}
         >
-          <span style={{ fontSize: 12.5, color: ink[85], fontWeight: 500 }}>kickoff</span>
+          <span style={{ fontSize: 12.5, color: ink[85], fontWeight: 500 }}>
+            {manifest?.meta.name}
+          </span>
           <span style={{ fontSize: 11, color: ink[30] }}>·</span>
           <div
             style={{

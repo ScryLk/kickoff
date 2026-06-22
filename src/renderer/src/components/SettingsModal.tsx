@@ -1,32 +1,47 @@
-import { type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { colors, fonts, ink, radius } from '../theme'
-import { useUi, type TestState } from '../state/ui'
-import { FauxSelect, SectionLabel } from './ui'
-
-interface TestInfo {
-  icon: string
-  color: string
-  text: string
-}
-
-const TEST_INFO: Partial<Record<TestState, TestInfo>> = {
-  testing: { icon: '◌', color: ink[60], text: 'Verificando a chave…' },
-  ok: { icon: '✓', color: colors.success, text: 'Conexão estabelecida.' },
-  failed: { icon: '✕', color: colors.spark, text: 'Falhou — verifique a chave.' }
-}
+import { useApp } from '../state/ui'
+import { PROVIDERS, PROVIDER_LIST, type ProviderId } from '@shared/providers'
+import { Select, SectionLabel } from './ui'
 
 const labelStyle: CSSProperties = { fontSize: 12.5, fontWeight: 600, color: colors.offWhite }
 
+function testColor(test: string): string {
+  if (test === 'ok') return colors.success
+  if (test === 'failed') return colors.spark
+  return ink[60]
+}
+
+function testIcon(test: string): string {
+  if (test === 'ok') return '✓'
+  if (test === 'failed') return '✕'
+  return '◌'
+}
+
 export function SettingsModal(): React.JSX.Element {
-  const { closeSettings, showKey, toggleShowKey, test, setTest } = useUi()
+  const {
+    closeSettings,
+    showKey,
+    toggleShowKey,
+    test,
+    testMessage,
+    providerConfig,
+    hasKey,
+    setProvider,
+    saveApiKey,
+    clearApiKey,
+    runTest
+  } = useApp()
 
-  // Simulação do teste na casca; a Fase 4 chama secrets.testConnection via IPC.
-  const runTest = (): void => {
-    setTest('testing')
-    window.setTimeout(() => setTest('ok'), 800)
+  const provider: ProviderId = providerConfig?.provider ?? 'anthropic'
+  const info = PROVIDERS[provider]
+  const [keyInput, setKeyInput] = useState('')
+
+  const onSaveKey = async (): Promise<void> => {
+    if (!keyInput.trim()) return
+    await saveApiKey(keyInput.trim())
+    setKeyInput('')
   }
-
-  const info = TEST_INFO[test]
 
   return (
     <div
@@ -54,7 +69,6 @@ export function SettingsModal(): React.JSX.Element {
           boxShadow: '0 24px 64px rgba(0,0,0,0.5)'
         }}
       >
-        {/* header */}
         <div
           style={{
             display: 'flex',
@@ -95,100 +109,111 @@ export function SettingsModal(): React.JSX.Element {
             gap: 26
           }}
         >
-          {/* AI provider */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <SectionLabel>Provedor de IA</SectionLabel>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               <label style={labelStyle}>Provedor</label>
-              <FauxSelect value="Anthropic (Claude)" />
-              <span style={{ fontSize: 11, color: ink[40] }}>
-                Anthropic · OpenAI · Google (Gemini) · OpenRouter · Local (Ollama / LM Studio)
-              </span>
+              <Select
+                value={provider}
+                options={PROVIDER_LIST.map((p) => ({ value: p.id, label: p.label }))}
+                onChange={(v) => void setProvider(v as ProviderId)}
+              />
             </div>
 
-            {/* api key */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <label style={labelStyle}>API key</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 13px',
-                    border: `1px solid ${colors.borderField}`,
-                    borderRadius: radius.md,
-                    background: colors.ink
-                  }}
-                >
-                  <span
+            {info.requiresApiKey ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <label style={labelStyle}>API key</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={keyInput}
+                    onChange={(e) => setKeyInput(e.target.value)}
+                    placeholder={hasKey ? '•••••••••• (chave salva)' : 'cole sua API key'}
                     style={{
                       flex: 1,
-                      padding: '11px 0',
+                      padding: '11px 13px',
+                      border: `1px solid ${colors.borderField}`,
+                      borderRadius: radius.md,
+                      background: colors.ink,
+                      color: colors.offWhite,
                       fontFamily: fonts.mono,
                       fontSize: 13,
-                      color: ink[60]
+                      outline: 'none'
                     }}
-                  >
-                    {showKey ? 'sk-ant-api03-x9Kf2…aQ' : '••••••••••••••••••••••'}
-                  </span>
-                  <button
-                    onClick={toggleShowKey}
-                    style={{
-                      border: 'none',
-                      background: 'transparent',
-                      color: ink[45],
-                      fontFamily: fonts.sans,
-                      fontSize: 12,
-                      cursor: 'pointer'
-                    }}
-                  >
+                  />
+                  <button onClick={toggleShowKey} style={pillBtn}>
                     {showKey ? 'ocultar' : 'mostrar'}
                   </button>
                 </div>
-                <button
-                  onClick={runTest}
-                  style={{
-                    flex: 'none',
-                    padding: '11px 14px',
-                    borderRadius: radius.md,
-                    fontFamily: fonts.sans,
-                    fontSize: 12.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    border: `1px solid ${colors.borderStrong}`,
-                    background: colors.surface,
-                    color: colors.offWhite
-                  }}
-                >
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => void onSaveKey()}
+                    disabled={!keyInput.trim()}
+                    style={primaryBtn(!keyInput.trim())}
+                  >
+                    Salvar chave
+                  </button>
+                  <button onClick={() => void runTest()} disabled={!hasKey} style={pillBtn}>
+                    {test === 'testing' ? 'Testando…' : 'Testar conexão'}
+                  </button>
+                  {hasKey && (
+                    <button onClick={() => void clearApiKey()} style={pillBtn}>
+                      Remover chave
+                    </button>
+                  )}
+                </div>
+                {test !== 'idle' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 12,
+                      color: testColor(test)
+                    }}
+                  >
+                    <span>{testIcon(test)}</span>
+                    <span>{testMessage}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 12, color: ink[55] }}>
+                  Provedor local não usa API key. Verifique se o servidor está rodando.
+                </span>
+                <button onClick={() => void runTest()} style={pillBtn}>
                   {test === 'testing' ? 'Testando…' : 'Testar conexão'}
                 </button>
+                {test !== 'idle' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 7,
+                      fontSize: 12,
+                      color: testColor(test)
+                    }}
+                  >
+                    <span>{testIcon(test)}</span>
+                    <span>{testMessage}</span>
+                  </div>
+                )}
               </div>
-              {info && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    fontSize: 12,
-                    color: info.color
-                  }}
-                >
-                  <span>{info.icon}</span>
-                  <span>{info.text}</span>
-                </div>
-              )}
-            </div>
+            )}
 
-            {/* model */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              <label style={labelStyle}>Modelo</label>
-              <FauxSelect value="claude-opus-4-8" />
-            </div>
+            {info.models.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <label style={labelStyle}>Modelo</label>
+                <Select
+                  value={providerConfig?.model ?? info.models[0]}
+                  options={info.models.map((m) => ({ value: m, label: m }))}
+                  onChange={(v) => void setProvider(provider, v)}
+                />
+              </div>
+            )}
 
-            {/* security note */}
             <div
               style={{
                 display: 'flex',
@@ -207,45 +232,8 @@ export function SettingsModal(): React.JSX.Element {
               </p>
             </div>
           </div>
-
-          {/* appearance */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <SectionLabel>Aparência</SectionLabel>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <label style={{ fontSize: 13, color: colors.offWhite }}>Tema</label>
-              <div
-                style={{
-                  display: 'flex',
-                  padding: 3,
-                  gap: 3,
-                  border: `1px solid ${colors.borderField}`,
-                  borderRadius: radius.md,
-                  background: colors.ink
-                }}
-              >
-                <span
-                  style={{
-                    padding: '6px 14px',
-                    borderRadius: 7,
-                    background: colors.bordo,
-                    color: colors.offWhite,
-                    fontSize: 12,
-                    fontWeight: 600
-                  }}
-                >
-                  Escuro
-                </span>
-                <span
-                  style={{ padding: '6px 14px', borderRadius: 7, color: ink[45], fontSize: 12 }}
-                >
-                  Claro
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* footer */}
         <div
           style={{
             flex: 'none',
@@ -258,37 +246,37 @@ export function SettingsModal(): React.JSX.Element {
             background: colors.surfaceAlt
           }}
         >
-          <button
-            onClick={closeSettings}
-            style={{
-              padding: '10px 18px',
-              border: `1px solid ${colors.borderStrong}`,
-              borderRadius: radius.md,
-              background: 'transparent',
-              color: ink[70],
-              fontSize: 13,
-              cursor: 'pointer'
-            }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={closeSettings}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              borderRadius: radius.md,
-              background: colors.bordo,
-              color: colors.offWhite,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            Salvar
+          <button onClick={closeSettings} style={primaryBtn(false)}>
+            Concluído
           </button>
         </div>
       </div>
     </div>
   )
+}
+
+const pillBtn: CSSProperties = {
+  padding: '8px 13px',
+  borderRadius: radius.md,
+  border: `1px solid ${colors.borderStrong}`,
+  background: colors.surface,
+  color: ink[70],
+  fontFamily: fonts.sans,
+  fontSize: 12.5,
+  cursor: 'pointer'
+}
+
+function primaryBtn(disabled: boolean): CSSProperties {
+  return {
+    padding: '8px 16px',
+    borderRadius: radius.md,
+    border: 'none',
+    background: colors.bordo,
+    color: colors.offWhite,
+    fontFamily: fonts.sans,
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.45 : 1
+  }
 }

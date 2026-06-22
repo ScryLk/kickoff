@@ -71,7 +71,65 @@ export function SectionLabel({ children }: { children: ReactNode }): React.JSX.E
   )
 }
 
-/** "Select" visual (somente exibição; a interação real chega na Fase 4). */
+interface SelectOption {
+  value: string
+  label: string
+}
+
+interface SelectProps {
+  value: string
+  options: SelectOption[]
+  onChange: (value: string) => void
+  disabled?: boolean
+}
+
+/** Select nativo estilizado na marca. */
+export function Select({ value, options, onChange, disabled }: SelectProps): React.JSX.Element {
+  return (
+    <div style={{ position: 'relative' }}>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: '100%',
+          appearance: 'none',
+          WebkitAppearance: 'none',
+          padding: '11px 30px 11px 13px',
+          border: `1px solid ${colors.borderField}`,
+          borderRadius: radius.md,
+          background: colors.ink,
+          color: disabled ? ink[40] : colors.offWhite,
+          fontFamily: fonts.sans,
+          fontSize: 13,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          outline: 'none'
+        }}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value} style={{ background: colors.surface }}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <span
+        style={{
+          position: 'absolute',
+          right: 13,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          pointerEvents: 'none',
+          color: ink[45],
+          fontSize: 11
+        }}
+      >
+        ▾
+      </span>
+    </div>
+  )
+}
+
+/** "Select" visual (somente exibição). */
 export function FauxSelect({ value }: { value: string }): React.JSX.Element {
   return (
     <div

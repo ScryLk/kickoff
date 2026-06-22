@@ -1,36 +1,19 @@
-import { type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
+import { getTranspiler } from '@core/transpilers'
 import { colors, fonts, ink } from '../theme'
-import { useUi, type ExportTarget } from '../state/ui'
+import { useApp, type ExportTarget } from '../state/ui'
 
-const FILENAMES: Record<ExportTarget, string> = {
-  claude: 'CLAUDE.md',
-  agents: 'AGENTS.md',
-  cursor: '.cursor/rules',
-  prompt: 'prompt-block.txt'
+// Mapeia cada alvo da UI a um transpiler do core. Só CLAUDE.md existe hoje;
+// os demais ficam pendentes até o core ganhar seus transpilers.
+const TARGETS: Record<
+  ExportTarget,
+  { label: string; transpilerId: string | null; filename: string }
+> = {
+  claude: { label: 'CLAUDE.md', transpilerId: 'claude-md', filename: 'CLAUDE.md' },
+  agents: { label: 'AGENTS.md', transpilerId: null, filename: 'AGENTS.md' },
+  cursor: { label: 'Regras do Cursor', transpilerId: null, filename: '.cursor/rules' },
+  prompt: { label: 'Bloco de prompt', transpilerId: null, filename: 'prompt-block.txt' }
 }
-
-// Previews mock da casca; a Fase 4 liga ao manifesto real e ao transpiler.
-const MANIFEST_SAMPLE = `{
-  "manifestVersion": "0.1.0",
-  "meta": {
-    "name": "kickoff",
-    "description": "App desktop local-only…"
-  },
-  "stack": null,
-  "architecture": null,
-  "conventions": null
-}`
-
-const EXPORT_SAMPLE = `# kickoff
-
-App desktop local-only que guia a criação de
-projetos de software por um wizard.
-
-## Stack
-_pendente — preencha o passo Stack_
-
-## Princípios
-_pendente_`
 
 const preStyle: CSSProperties = {
   margin: 0,
@@ -69,8 +52,21 @@ function tabStyle(active: boolean): CSSProperties {
   }
 }
 
+const smallBtn = (primary: boolean): CSSProperties => ({
+  display: 'flex',
+  alignItems: 'center',
+  gap: 5,
+  padding: '5px 11px',
+  borderRadius: 7,
+  fontSize: 12,
+  cursor: 'pointer',
+  ...(primary
+    ? { border: 'none', background: colors.bordo, color: colors.offWhite }
+    : { border: `1px solid ${colors.borderStrong}`, background: 'transparent', color: ink[70] })
+})
+
 function CollapsedTab(): React.JSX.Element {
-  const { setRightOpen } = useUi()
+  const { setRightOpen } = useApp()
   return (
     <div
       onClick={() => setRightOpen(true)}
@@ -105,13 +101,95 @@ function CollapsedTab(): React.JSX.Element {
   )
 }
 
+function ExportTabBody(): React.JSX.Element {
+  const { manifest, projectDir, target, setTarget } = useApp()
+  const [copied, setCopied] = useState(false)
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
+
+  const def = TARGETS[target]
+  const transpiler = def.transpilerId ? getTranspiler(def.transpilerId) : undefined
+  const content =
+    transpiler && manifest
+      ? transpiler.transpile(manifest)
+      : `# ${def.label}\n\nTranspiler em desenvolvimento — disponível em breve.`
+  const canExport = Boolean(transpiler && manifest && projectDir)
+
+  const onCopy = async (): Promise<void> => {
+    await navigator.clipboard.writeText(content)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 1500)
+  }
+
+  const onSave = async (): Promise<void> => {
+    if (!projectDir || !transpiler) return
+    const result = await window.kickoff.project.writeArtifact(projectDir, def.filename, content)
+    setSaveMsg(result.saved ? 'salvo ✓' : `erro: ${result.error ?? 'falhou'}`)
+    window.setTimeout(() => setSaveMsg(null), 2500)
+  }
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div
+        style={{
+          padding: '14px 16px 12px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 7,
+          borderBottom: `1px solid ${colors.border}`
+        }}
+      >
+        {(Object.keys(TARGETS) as ExportTarget[]).map((key) => (
+          <button key={key} onClick={() => setTarget(key)} style={chipStyle(target === key)}>
+            {TARGETS[key].label}
+          </button>
+        ))}
+      </div>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '9px 16px',
+          borderBottom: `1px solid ${colors.border}`,
+          background: colors.ink
+        }}
+      >
+        <span style={{ fontSize: 11, fontFamily: fonts.mono, color: ink[55] }}>
+          {saveMsg ?? def.filename}
+        </span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={() => void onCopy()} style={smallBtn(false)}>
+            {copied ? 'copiado ✓' : 'Copiar'}
+          </button>
+          <button
+            onClick={() => void onSave()}
+            disabled={!canExport}
+            style={{
+              ...smallBtn(true),
+              opacity: canExport ? 1 : 0.45,
+              cursor: canExport ? 'pointer' : 'not-allowed'
+            }}
+          >
+            Salvar no projeto
+          </button>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px', background: colors.ink }}>
+        <pre style={{ ...preStyle, color: ink[60] }}>{content}</pre>
+      </div>
+    </div>
+  )
+}
+
 /** Painel direito do workspace: preview ao vivo do manifesto e aba de export. */
 export function PreviewPanel(): React.JSX.Element {
-  const { rightOpen, setRightOpen, tab, setTab, target, setTarget } = useUi()
+  const { rightOpen, setRightOpen, tab, setTab, manifest } = useApp()
 
   if (!rightOpen) {
     return <CollapsedTab />
   }
+
+  const manifestJson = manifest ? JSON.stringify(manifest, null, 2) : '{}'
 
   return (
     <div
@@ -124,7 +202,6 @@ export function PreviewPanel(): React.JSX.Element {
         flexDirection: 'column'
       }}
     >
-      {/* tabs */}
       <div
         style={{
           height: 46,
@@ -177,85 +254,11 @@ export function PreviewPanel(): React.JSX.Element {
             <span style={{ fontSize: 10.5, color: ink[35] }}>read-only · ao vivo</span>
           </div>
           <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px' }}>
-            <pre style={preStyle}>{MANIFEST_SAMPLE}</pre>
+            <pre style={preStyle}>{manifestJson}</pre>
           </div>
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <div
-            style={{
-              padding: '14px 16px 12px',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 7,
-              borderBottom: `1px solid ${colors.border}`
-            }}
-          >
-            <button onClick={() => setTarget('claude')} style={chipStyle(target === 'claude')}>
-              CLAUDE.md
-            </button>
-            <button onClick={() => setTarget('agents')} style={chipStyle(target === 'agents')}>
-              AGENTS.md
-            </button>
-            <button onClick={() => setTarget('cursor')} style={chipStyle(target === 'cursor')}>
-              Regras do Cursor
-            </button>
-            <button onClick={() => setTarget('prompt')} style={chipStyle(target === 'prompt')}>
-              Bloco de prompt
-            </button>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '9px 16px',
-              borderBottom: `1px solid ${colors.border}`,
-              background: colors.ink
-            }}
-          >
-            <span style={{ fontSize: 11, fontFamily: fonts.mono, color: ink[55] }}>
-              {FILENAMES[target]}
-            </span>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '5px 11px',
-                  border: `1px solid ${colors.borderStrong}`,
-                  borderRadius: 7,
-                  background: 'transparent',
-                  color: ink[70],
-                  fontSize: 12,
-                  cursor: 'pointer'
-                }}
-              >
-                Copiar
-              </button>
-              <button
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '5px 11px',
-                  border: 'none',
-                  borderRadius: 7,
-                  background: colors.bordo,
-                  color: colors.offWhite,
-                  fontSize: 12,
-                  cursor: 'pointer'
-                }}
-              >
-                Salvar no projeto
-              </button>
-            </div>
-          </div>
-          <div style={{ flex: 1, overflow: 'auto', padding: '16px 18px', background: colors.ink }}>
-            <pre style={{ ...preStyle, color: ink[60] }}>{EXPORT_SAMPLE}</pre>
-          </div>
-        </div>
+        <ExportTabBody />
       )}
     </div>
   )

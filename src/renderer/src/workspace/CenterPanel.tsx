@@ -1,7 +1,8 @@
 import { type CSSProperties } from 'react'
 import { colors, fonts, ink, radius } from '../theme'
-import { useUi } from '../state/ui'
+import { useApp } from '../state/ui'
 import { STEPS } from './steps'
+import { stepCompletion } from './completion'
 import { Button, FauxSelect } from '../components/ui'
 import { AiAssistButton } from './AiAssistButton'
 
@@ -18,7 +19,12 @@ const inputBase: CSSProperties = {
   outline: 'none'
 }
 
-function MetaForm({ invalid }: { invalid: boolean }): React.JSX.Element {
+function MetaForm(): React.JSX.Element {
+  const { manifest, updateMeta, validation } = useApp()
+  if (!manifest) return <></>
+  const nameMissing = !manifest.meta.name?.trim()
+  const nameInvalid = nameMissing && validation != null && !validation.valid
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
       {/* nome */}
@@ -28,11 +34,12 @@ function MetaForm({ invalid }: { invalid: boolean }): React.JSX.Element {
           <span style={{ color: colors.spark, fontSize: 13 }}>*</span>
         </div>
         <input
-          defaultValue={invalid ? '' : 'kickoff'}
+          value={manifest.meta.name ?? ''}
+          onChange={(e) => updateMeta({ name: e.target.value })}
           placeholder="meu-projeto"
           style={{
             ...inputBase,
-            border: `1px solid ${invalid ? colors.spark : colors.borderField}`
+            border: `1px solid ${nameInvalid ? colors.spark : colors.borderField}`
           }}
         />
         <span style={fieldHint}>Usado como identificador em todo o manifesto.</span>
@@ -45,6 +52,8 @@ function MetaForm({ invalid }: { invalid: boolean }): React.JSX.Element {
           <AiAssistButton />
         </div>
         <textarea
+          value={manifest.meta.description ?? ''}
+          onChange={(e) => updateMeta({ description: e.target.value })}
           rows={3}
           placeholder="O que o projeto faz, em uma ou duas frases."
           style={{ ...inputBase, resize: 'none', border: `1px solid ${colors.borderField}` }}
@@ -52,10 +61,22 @@ function MetaForm({ invalid }: { invalid: boolean }): React.JSX.Element {
         <span style={fieldHint}>Uma ou duas frases sobre o que o projeto faz.</span>
       </div>
 
-      {/* tipo */}
+      {/* tagline */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-        <label style={fieldLabel}>Tipo</label>
-        <FauxSelect value="Aplicativo desktop" />
+        <label style={fieldLabel}>Tagline</label>
+        <input
+          value={manifest.meta.tagline ?? ''}
+          onChange={(e) => updateMeta({ tagline: e.target.value })}
+          placeholder="Frase curta que resume o projeto."
+          style={{ ...inputBase, border: `1px solid ${colors.borderField}` }}
+        />
+        <span style={fieldHint}>Opcional — aparece no topo dos artefatos gerados.</span>
+      </div>
+
+      {/* licença */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+        <label style={fieldLabel}>Licença</label>
+        <FauxSelect value={manifest.meta.license || 'MIT'} />
       </div>
     </div>
   )
@@ -96,7 +117,8 @@ function StepPlaceholder(): React.JSX.Element {
           Passo ainda não preenchido
         </span>
         <span style={{ fontSize: 12.5, color: ink[55], lineHeight: 1.55 }}>
-          Comece a preencher os campos deste passo ou deixe a IA sugerir um ponto de partida.
+          Este passo do wizard chega em breve. Comece pelo Meta — ele já salva no disco e alimenta o
+          preview ao vivo.
         </span>
       </div>
       <AiAssistButton size="lg" />
@@ -104,12 +126,51 @@ function StepPlaceholder(): React.JSX.Element {
   )
 }
 
+function SaveIndicator(): React.JSX.Element {
+  const { saveState } = useApp()
+  if (saveState === 'saving') {
+    return (
+      <>
+        <span
+          style={{
+            width: 13,
+            height: 13,
+            borderRadius: '50%',
+            border: `2px solid ${colors.borderStrong}`,
+            borderTopColor: colors.spark,
+            display: 'inline-block',
+            animation: 'ko-spin .7s linear infinite'
+          }}
+        />
+        <span>salvando…</span>
+      </>
+    )
+  }
+  if (saveState === 'saved') {
+    return (
+      <>
+        <span style={{ color: colors.success }}>✓</span>
+        <span>salvo no disco</span>
+      </>
+    )
+  }
+  if (saveState === 'error') {
+    return (
+      <>
+        <span style={{ color: colors.spark }}>✕</span>
+        <span>erro ao salvar</span>
+      </>
+    )
+  }
+  return <span>edições não salvas</span>
+}
+
 /** Painel central do workspace: cabeçalho do passo, formulário e rodapé com auto-save. */
 export function CenterPanel(): React.JSX.Element {
-  const { selectedStep, seal, save } = useUi()
+  const { selectedStep, setSelectedStep, manifest, validation } = useApp()
   const step = STEPS[selectedStep]
-  const invalid = seal === 'invalid'
-  const doneCount = 0
+  const invalid = validation != null && !validation.valid
+  const doneCount = stepCompletion(manifest).filter(Boolean).length
   const progressLabel = `${doneCount} de ${STEPS.length}`
 
   return (
@@ -124,7 +185,7 @@ export function CenterPanel(): React.JSX.Element {
     >
       <div style={{ flex: 1, overflowY: 'auto', padding: '34px 40px' }}>
         <div style={{ maxWidth: 560 }}>
-          {invalid && (
+          {invalid && selectedStep === 0 && (
             <div
               style={{
                 display: 'flex',
@@ -186,7 +247,7 @@ export function CenterPanel(): React.JSX.Element {
             {step.description}
           </p>
 
-          {selectedStep === 0 ? <MetaForm invalid={invalid} /> : <StepPlaceholder />}
+          {selectedStep === 0 ? <MetaForm /> : <StepPlaceholder />}
         </div>
       </div>
 
@@ -206,33 +267,25 @@ export function CenterPanel(): React.JSX.Element {
         <div
           style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: ink[55] }}
         >
-          {save === 'saving' ? (
-            <>
-              <span
-                style={{
-                  width: 13,
-                  height: 13,
-                  borderRadius: '50%',
-                  border: `2px solid ${colors.borderStrong}`,
-                  borderTopColor: colors.spark,
-                  display: 'inline-block',
-                  animation: 'ko-spin .7s linear infinite'
-                }}
-              />
-              <span>salvando…</span>
-            </>
-          ) : (
-            <>
-              <span style={{ color: colors.success }}>✓</span>
-              <span>salvo no disco</span>
-            </>
-          )}
+          <SaveIndicator />
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <Button variant="secondary" style={{ padding: '10px 18px' }}>
+          <Button
+            variant="secondary"
+            disabled={selectedStep === 0}
+            onClick={() => setSelectedStep(Math.max(0, selectedStep - 1))}
+            style={{ padding: '10px 18px', opacity: selectedStep === 0 ? 0.5 : 1 }}
+          >
             Anterior
           </Button>
-          <Button variant="primary">Próximo</Button>
+          <Button
+            variant="primary"
+            disabled={selectedStep === STEPS.length - 1}
+            onClick={() => setSelectedStep(Math.min(STEPS.length - 1, selectedStep + 1))}
+            style={{ opacity: selectedStep === STEPS.length - 1 ? 0.5 : 1 }}
+          >
+            Próximo
+          </Button>
         </div>
       </div>
     </div>

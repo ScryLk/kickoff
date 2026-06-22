@@ -1,11 +1,11 @@
 import { colors, fonts, ink, radius } from '../theme'
 import { KickoffLockup } from '../components/Logo'
 import { Button, FauxSelect } from '../components/ui'
-import { useUi } from '../state/ui'
+import { useApp } from '../state/ui'
 
 /** Onboarding opcional: conectar um provedor de IA antes de começar. */
 export function OnboardingScreen(): React.JSX.Element {
-  const { setScreen } = useUi()
+  const { setScreen } = useApp()
 
   return (
     <div
