@@ -61,6 +61,7 @@ interface AppContextValue {
   seal: Seal
   openFolder: () => Promise<void>
   updateMeta: (patch: Partial<ProjectMeta>) => void
+  editManifest: (fn: (current: ProjectManifest) => ProjectManifest) => void
 
   // provedor de IA
   providerConfig: ProviderConfig | null
@@ -141,12 +142,13 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     setScreen('workspace')
   }, [])
 
-  const updateMeta = useCallback(
-    (patch: Partial<ProjectMeta>): void => {
+  // Aplica uma edição ao manifesto: valida ao vivo (no main) e auto-salva
+  // (debounced) no disco. É o caminho único de mutação do manifesto.
+  const editManifest = useCallback(
+    (fn: (current: ProjectManifest) => ProjectManifest): void => {
       setManifest((current) => {
         if (!current) return current
-        const next: ProjectManifest = { ...current, meta: { ...current.meta, ...patch } }
-        // Validação ao vivo pelo main (sem Ajv no renderer).
+        const next = fn(current)
         void window.kickoff.project.validate(next).then(setValidation)
         if (projectDir) {
           if (saveTimer.current) clearTimeout(saveTimer.current)
@@ -159,6 +161,13 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       })
     },
     [projectDir, persist]
+  )
+
+  const updateMeta = useCallback(
+    (patch: Partial<ProjectMeta>): void => {
+      editManifest((current) => ({ ...current, meta: { ...current.meta, ...patch } }))
+    },
+    [editManifest]
   )
 
   const setProvider = useCallback(async (provider: ProviderId, model?: string): Promise<void> => {
@@ -234,6 +243,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       seal,
       openFolder,
       updateMeta,
+      editManifest,
       providerConfig,
       hasKey,
       aiConfigured,
@@ -259,6 +269,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       seal,
       openFolder,
       updateMeta,
+      editManifest,
       providerConfig,
       hasKey,
       aiConfigured,
