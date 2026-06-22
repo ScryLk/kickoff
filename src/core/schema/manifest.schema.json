@@ -171,6 +171,11 @@
           }
         }
       }
+    },
+    "nextSteps": {
+      "type": "array",
+      "description": "Roadmap inicial: o que vem logo depois do kickoff.",
+      "items": { "type": "string" }
     }
   }
 }

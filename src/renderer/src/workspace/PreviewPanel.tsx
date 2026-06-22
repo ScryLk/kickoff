@@ -3,17 +3,16 @@ import { getTranspiler } from '@core/transpilers'
 import { colors, fonts, ink } from '../theme'
 import { useApp, type ExportTarget } from '../state/ui'
 
-// Mapeia cada alvo da UI a um transpiler do core. Só CLAUDE.md existe hoje;
-// os demais ficam pendentes até o core ganhar seus transpilers.
-const TARGETS: Record<
-  ExportTarget,
-  { label: string; transpilerId: string | null; filename: string }
-> = {
-  claude: { label: 'CLAUDE.md', transpilerId: 'claude-md', filename: 'CLAUDE.md' },
-  agents: { label: 'AGENTS.md', transpilerId: null, filename: 'AGENTS.md' },
-  cursor: { label: 'Regras do Cursor', transpilerId: null, filename: '.cursor/rules' },
-  prompt: { label: 'Bloco de prompt', transpilerId: null, filename: 'prompt-block.txt' }
+// Mapeia cada alvo da UI ao id do transpiler do core. Label e nome de arquivo
+// vêm do próprio transpiler.
+const TARGET_TRANSPILER: Record<ExportTarget, string> = {
+  claude: 'claude-md',
+  agents: 'agents-md',
+  cursor: 'cursor',
+  prompt: 'prompt'
 }
+
+const TARGET_ORDER: ExportTarget[] = ['claude', 'agents', 'cursor', 'prompt']
 
 const preStyle: CSSProperties = {
   margin: 0,
@@ -106,12 +105,12 @@ function ExportTabBody(): React.JSX.Element {
   const [copied, setCopied] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
 
-  const def = TARGETS[target]
-  const transpiler = def.transpilerId ? getTranspiler(def.transpilerId) : undefined
+  const transpiler = getTranspiler(TARGET_TRANSPILER[target])
+  const filename = transpiler?.filename ?? ''
   const content =
     transpiler && manifest
       ? transpiler.transpile(manifest)
-      : `# ${def.label}\n\nTranspiler em desenvolvimento — disponível em breve.`
+      : 'Selecione um projeto para gerar o artefato.'
   const canExport = Boolean(transpiler && manifest && projectDir)
 
   const onCopy = async (): Promise<void> => {
@@ -122,7 +121,7 @@ function ExportTabBody(): React.JSX.Element {
 
   const onSave = async (): Promise<void> => {
     if (!projectDir || !transpiler) return
-    const result = await window.kickoff.project.writeArtifact(projectDir, def.filename, content)
+    const result = await window.kickoff.project.writeArtifact(projectDir, filename, content)
     setSaveMsg(result.saved ? 'salvo ✓' : `erro: ${result.error ?? 'falhou'}`)
     window.setTimeout(() => setSaveMsg(null), 2500)
   }
@@ -138,9 +137,9 @@ function ExportTabBody(): React.JSX.Element {
           borderBottom: `1px solid ${colors.border}`
         }}
       >
-        {(Object.keys(TARGETS) as ExportTarget[]).map((key) => (
+        {TARGET_ORDER.map((key) => (
           <button key={key} onClick={() => setTarget(key)} style={chipStyle(target === key)}>
-            {TARGETS[key].label}
+            {getTranspiler(TARGET_TRANSPILER[key])?.label ?? key}
           </button>
         ))}
       </div>
@@ -155,7 +154,7 @@ function ExportTabBody(): React.JSX.Element {
         }}
       >
         <span style={{ fontSize: 11, fontFamily: fonts.mono, color: ink[55] }}>
-          {saveMsg ?? def.filename}
+          {saveMsg ?? filename}
         </span>
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={() => void onCopy()} style={smallBtn(false)}>

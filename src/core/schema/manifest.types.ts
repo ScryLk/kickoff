@@ -101,6 +101,8 @@ export interface ProjectManifest {
   conventions?: ProjectConventions
   /** Comandos úteis do projeto. */
   commands?: ProjectCommand[]
+  /** Roadmap inicial: o que vem logo depois do kickoff. */
+  nextSteps?: string[]
 }
 
 /** Versão atual do schema do manifesto. */
