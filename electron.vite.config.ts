@@ -2,24 +2,27 @@ import { resolve } from 'path'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 
-const coreAlias = { '@core': resolve('src/core') }
+const sharedAliases = {
+  '@core': resolve('src/core'),
+  '@shared': resolve('src/shared')
+}
 
 export default defineConfig({
   main: {
     resolve: {
-      alias: coreAlias
+      alias: sharedAliases
     }
   },
   preload: {
     resolve: {
-      alias: coreAlias
+      alias: sharedAliases
     }
   },
   renderer: {
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer/src'),
-        ...coreAlias
+        ...sharedAliases
       }
     },
     plugins: [react()]
