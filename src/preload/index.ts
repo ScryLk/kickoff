@@ -21,7 +21,9 @@ const kickoff: KickoffApi = {
   settings: {
     getProvider: () => ipcRenderer.invoke(IpcChannels.settingsGetProvider),
     setProvider: (config: ProviderConfig) =>
-      ipcRenderer.invoke(IpcChannels.settingsSetProvider, config)
+      ipcRenderer.invoke(IpcChannels.settingsSetProvider, config),
+    getRecents: () => ipcRenderer.invoke(IpcChannels.settingsGetRecents),
+    addRecent: (path: string) => ipcRenderer.invoke(IpcChannels.settingsAddRecent, path)
   },
   secrets: {
     hasKey: (provider: ProviderId) => ipcRenderer.invoke(IpcChannels.secretsHasKey, provider),

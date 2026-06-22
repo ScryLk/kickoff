@@ -20,7 +20,7 @@ import {
 import { MANIFEST_VERSION, type ProjectManifest, type ProjectMeta } from '@core/schema'
 import { type ManifestValidationResult } from '@core/validation'
 import { PROVIDERS, type ProviderId } from '@shared/providers'
-import { type ProviderConfig, type TestConnectionResult } from '@shared/ipc'
+import { type ProviderConfig, type RecentProject, type TestConnectionResult } from '@shared/ipc'
 
 /** Telas principais do app. */
 export type Screen = 'home' | 'workspace' | 'onboarding'
@@ -59,7 +59,9 @@ interface AppContextValue {
   validation: ManifestValidationResult | null
   saveState: SaveState
   seal: Seal
+  recents: RecentProject[]
   openFolder: () => Promise<void>
+  openRecent: (path: string) => Promise<void>
   updateMeta: (patch: Partial<ProjectMeta>) => void
   editManifest: (fn: (current: ProjectManifest) => ProjectManifest) => void
 
@@ -105,14 +107,16 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
   const [hasKey, setHasKey] = useState(false)
   const [test, setTest] = useState<TestState>('idle')
   const [testMessage, setTestMessage] = useState('')
+  const [recents, setRecents] = useState<RecentProject[]>([])
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Carrega a configuração de provedor + presença de chave ao iniciar.
+  // Carrega configuração de provedor, presença de chave e recentes ao iniciar.
   const refreshProvider = useCallback(async (): Promise<void> => {
     const config = await window.kickoff.settings.getProvider()
     setProviderConfig(config)
     setHasKey(config ? await window.kickoff.secrets.hasKey(config.provider) : false)
+    setRecents(await window.kickoff.settings.getRecents())
   }, [])
 
   useEffect(() => {
@@ -129,9 +133,8 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     setSaveState(result.saved ? 'saved' : 'error')
   }, [])
 
-  const openFolder = useCallback(async (): Promise<void> => {
-    const { path } = await window.kickoff.project.openFolder()
-    if (!path) return
+  // Carrega um projeto de um caminho conhecido (sem diálogo).
+  const loadProject = useCallback(async (path: string): Promise<void> => {
     const read = await window.kickoff.project.readManifest(path)
     const loaded = read.found && read.manifest ? read.manifest : emptyManifest(basename(path))
     setProjectDir(path)
@@ -140,7 +143,20 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     setSaveState(read.found ? 'saved' : 'idle')
     setSelectedStep(0)
     setScreen('workspace')
+    setRecents(await window.kickoff.settings.addRecent(path))
   }, [])
+
+  const openFolder = useCallback(async (): Promise<void> => {
+    const { path } = await window.kickoff.project.openFolder()
+    if (path) await loadProject(path)
+  }, [loadProject])
+
+  const openRecent = useCallback(
+    async (path: string): Promise<void> => {
+      await loadProject(path)
+    },
+    [loadProject]
+  )
 
   // Aplica uma edição ao manifesto: valida ao vivo (no main) e auto-salva
   // (debounced) no disco. É o caminho único de mutação do manifesto.
@@ -241,7 +257,9 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       validation,
       saveState,
       seal,
+      recents,
       openFolder,
+      openRecent,
       updateMeta,
       editManifest,
       providerConfig,
@@ -267,7 +285,9 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
       validation,
       saveState,
       seal,
+      recents,
       openFolder,
+      openRecent,
       updateMeta,
       editManifest,
       providerConfig,

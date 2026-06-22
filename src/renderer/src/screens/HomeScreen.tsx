@@ -3,21 +3,14 @@ import { KickoffMark } from '../components/Logo'
 import { Button } from '../components/ui'
 import { useApp } from '../state/ui'
 
-interface Recent {
-  name: string
-  path: string
-  date: string
+function formatDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
-// Mock navegável da casca; na Fase 4 vem da lista de projetos recentes em disco.
-const RECENTS: Recent[] = [
-  { name: 'kickoff', path: '~/dev/kickoff', date: 'há 2 horas' },
-  { name: 'ledger-cli', path: '~/dev/ledger-cli', date: 'ontem' },
-  { name: 'atlas-docs', path: '~/work/atlas-docs', date: '12 jun 2026' }
-]
-
 export function HomeScreen(): React.JSX.Element {
-  const { openFolder, openSettings } = useApp()
+  const { openFolder, openRecent, openSettings, recents } = useApp()
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
@@ -106,42 +99,81 @@ export function HomeScreen(): React.JSX.Element {
               Projetos recentes
             </h2>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {RECENTS.map((r) => (
-              <button
-                key={r.path}
-                onClick={() => void openFolder()}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 3,
-                  padding: '12px 14px',
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: radius.md,
-                  background: colors.surface,
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
-              >
-                <span style={{ fontSize: 13.5, fontWeight: 600, color: colors.offWhite }}>
-                  {r.name}
-                </span>
-                <span
+          {recents.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {recents.map((r) => (
+                <button
+                  key={r.path}
+                  onClick={() => void openRecent(r.path)}
                   style={{
-                    fontSize: 11,
-                    color: ink[45],
-                    fontFamily: fonts.mono,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 3,
+                    padding: '12px 14px',
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: radius.md,
+                    background: colors.surface,
+                    cursor: 'pointer',
+                    textAlign: 'left'
                   }}
                 >
-                  {r.path}
-                </span>
-                <span style={{ fontSize: 10.5, color: ink[35], marginTop: 2 }}>{r.date}</span>
-              </button>
-            ))}
-          </div>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: colors.offWhite }}>
+                    {r.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: ink[45],
+                      fontFamily: fonts.mono,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {r.path}
+                  </span>
+                  <span style={{ fontSize: 10.5, color: ink[35], marginTop: 2 }}>
+                    {formatDate(r.openedAt)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                gap: 10,
+                padding: '30px 10px',
+                border: `1px dashed ${colors.borderField}`,
+                borderRadius: radius.md
+              }}
+            >
+              <div
+                style={{
+                  width: 38,
+                  height: 38,
+                  borderRadius: radius.md,
+                  border: `1px solid ${colors.borderField}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: ink[35]
+                }}
+              >
+                ⊞
+              </div>
+              <p style={{ margin: 0, fontSize: 12.5, color: ink[45], lineHeight: 1.5 }}>
+                Nenhum projeto recente.
+                <br />
+                Abra uma pasta ou crie um novo.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

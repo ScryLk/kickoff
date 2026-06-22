@@ -17,6 +17,8 @@ export const IpcChannels = {
   projectWriteArtifact: 'project:write-artifact',
   settingsGetProvider: 'settings:get-provider',
   settingsSetProvider: 'settings:set-provider',
+  settingsGetRecents: 'settings:get-recents',
+  settingsAddRecent: 'settings:add-recent',
   secretsHasKey: 'secrets:has-key',
   secretsSetKey: 'secrets:set-key',
   secretsClearKey: 'secrets:clear-key',
@@ -64,6 +66,16 @@ export interface WriteArtifactResult {
   error?: string
 }
 
+/** Um projeto aberto recentemente. */
+export interface RecentProject {
+  /** Caminho absoluto da pasta do projeto. */
+  path: string
+  /** Nome (base do caminho) para exibição. */
+  name: string
+  /** Quando foi aberto pela última vez (ISO 8601). */
+  openedAt: string
+}
+
 /** Configuração (não-secreta) do provedor de IA escolhido. */
 export interface ProviderConfig {
   /** Provedor selecionado. */
@@ -97,6 +109,8 @@ export interface KickoffApi {
   settings: {
     getProvider: () => Promise<ProviderConfig | null>
     setProvider: (config: ProviderConfig) => Promise<void>
+    getRecents: () => Promise<RecentProject[]>
+    addRecent: (path: string) => Promise<RecentProject[]>
   }
   secrets: {
     hasKey: (provider: ProviderId) => Promise<boolean>

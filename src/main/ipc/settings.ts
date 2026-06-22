@@ -1,12 +1,15 @@
 import { ipcMain } from 'electron'
-import { IpcChannels, type ProviderConfig } from '@shared/ipc'
+import { basename } from 'path'
+import { IpcChannels, type ProviderConfig, type RecentProject } from '@shared/ipc'
 import { isProviderId } from '@shared/providers'
 import { readJsonFile, writeJsonFile } from '../store'
 
 const SETTINGS_FILE = 'settings.json'
+const MAX_RECENTS = 8
 
 interface Settings {
   provider?: ProviderConfig
+  recents?: RecentProject[]
 }
 
 /**
@@ -35,4 +38,25 @@ export function registerSettingsHandlers(): void {
     }
     await writeJsonFile(SETTINGS_FILE, settings)
   })
+
+  ipcMain.handle(IpcChannels.settingsGetRecents, async (): Promise<RecentProject[]> => {
+    const settings = await readJsonFile<Settings>(SETTINGS_FILE)
+    return settings?.recents ?? []
+  })
+
+  ipcMain.handle(
+    IpcChannels.settingsAddRecent,
+    async (_event, dir: string): Promise<RecentProject[]> => {
+      const settings = (await readJsonFile<Settings>(SETTINGS_FILE)) ?? {}
+      const entry: RecentProject = {
+        path: dir,
+        name: basename(dir) || dir,
+        openedAt: new Date().toISOString()
+      }
+      const rest = (settings.recents ?? []).filter((r) => r.path !== dir)
+      settings.recents = [entry, ...rest].slice(0, MAX_RECENTS)
+      await writeJsonFile(SETTINGS_FILE, settings)
+      return settings.recents
+    }
+  )
 }
