@@ -86,17 +86,19 @@ Confirme os comandos reais no `package.json` antes de rodar.
 - Ponte main/IPC: abrir pasta, ler/salvar/validar `project-manifest.json` e
   gravar artefatos; provedor de IA + API key cifrada via `safeStorage`; testar
   conexão. Tudo exposto por `window.kickoff` (contextBridge).
-- UI ligada à lógica: passo Meta ponta a ponta (edita, valida, auto-salva no
-  disco), preview ao vivo do manifesto, aba Export (CLAUDE.md) com copiar/salvar,
-  Configurações (provedor/modelo/chave/teste). Botões de IA só com provedor+chave.
+- Todos os passos do wizard ponta a ponta (Meta, Stack, Estrutura, Convenções,
+  Princípios, Próximos passos): editam o manifesto, validam e auto-salvam.
+- Quatro transpilers: CLAUDE.md, AGENTS.md, regras do Cursor e bloco de prompt,
+  com copiar/salvar na aba Export.
+- Assistência por IA opt-in ("me ajuda a preencher") usando a chave do usuário.
+- Projetos recentes reais persistidos no userData.
 
 ## Próximos passos
 
-1. Transpilers restantes: AGENTS.md, regras do Cursor e bloco de prompt.
-2. Demais passos do wizard (Stack, Estrutura, Convenções, Princípios, Próximos
-   passos) ponta a ponta.
-3. Assistência por IA (botões "me ajuda a preencher") usando a chave do usuário.
-4. Lista real de projetos recentes (hoje é mock na Home).
+1. Empacotamento e ícones por SO (build:win/mac/linux) verificados em CI.
+2. Importar logo do projeto (caminho de arquivo, princípio nº5) no passo Meta.
+3. Edição de `commands` e `product` no wizard (já existem no schema).
+4. Internacionalização e tema claro (o toggle existe, falta aplicar).
 
 ## Decisões já tomadas
 

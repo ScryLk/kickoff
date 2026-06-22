@@ -8,14 +8,14 @@ export function stepCompletion(manifest: ProjectManifest | null): boolean[] {
   if (!manifest) {
     return [false, false, false, false, false, false]
   }
-  const { meta, stack, architecture, conventions } = manifest
+  const { meta, stack, architecture, conventions, nextSteps } = manifest
   return [
     Boolean(meta.name?.trim() && meta.description?.trim()),
     hasAny(stack),
     Boolean(architecture?.structure?.trim()),
     hasAny(conventions),
     Boolean(architecture?.principles?.length),
-    false
+    Boolean(nextSteps?.length)
   ]
 }
 
