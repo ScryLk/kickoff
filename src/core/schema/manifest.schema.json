@@ -1,0 +1,176 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kickoff.dev/schema/manifest.schema.json",
+  "title": "ProjectManifest",
+  "description": "Documento canônico e portável que descreve um projeto de software. Fonte única da verdade transpilada para CLAUDE.md, AGENTS.md, regras do Cursor e blocos de prompt.",
+  "type": "object",
+  "required": ["manifestVersion", "meta"],
+  "additionalProperties": false,
+  "properties": {
+    "manifestVersion": {
+      "type": "string",
+      "description": "Versão do schema do manifesto (semver).",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Identidade do projeto.",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nome do projeto.",
+          "minLength": 1
+        },
+        "tagline": {
+          "type": "string",
+          "description": "Frase curta que resume o projeto."
+        },
+        "description": {
+          "type": "string",
+          "description": "Descrição mais longa do que o projeto é e faz."
+        },
+        "version": {
+          "type": "string",
+          "description": "Versão do projeto-alvo (semver livre)."
+        },
+        "logo": {
+          "type": "string",
+          "description": "Caminho de arquivo do logo (ex.: .project/logo.png). Nunca base64."
+        },
+        "repository": {
+          "type": "string",
+          "description": "URL do repositório do projeto."
+        },
+        "license": {
+          "type": "string",
+          "description": "Identificador SPDX da licença (ex.: MIT)."
+        }
+      }
+    },
+    "product": {
+      "type": "object",
+      "description": "O porquê do projeto: problema, público e objetivos.",
+      "additionalProperties": false,
+      "properties": {
+        "problem": {
+          "type": "string",
+          "description": "Problema que o projeto resolve."
+        },
+        "audience": {
+          "type": "string",
+          "description": "Público-alvo / usuários."
+        },
+        "goals": {
+          "type": "array",
+          "description": "Objetivos do projeto.",
+          "items": { "type": "string" }
+        },
+        "nonGoals": {
+          "type": "array",
+          "description": "O que o projeto explicitamente não pretende fazer.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "stack": {
+      "type": "object",
+      "description": "Tecnologias usadas no projeto.",
+      "additionalProperties": false,
+      "properties": {
+        "languages": {
+          "type": "array",
+          "description": "Linguagens de programação.",
+          "items": { "type": "string" }
+        },
+        "frameworks": {
+          "type": "array",
+          "description": "Frameworks e bibliotecas principais.",
+          "items": { "type": "string" }
+        },
+        "runtime": {
+          "type": "string",
+          "description": "Runtime de execução (ex.: Node 22, Bun, Deno)."
+        },
+        "packageManager": {
+          "type": "string",
+          "description": "Gerenciador de pacotes (ex.: npm, pnpm, yarn)."
+        },
+        "database": {
+          "type": "string",
+          "description": "Banco de dados / persistência."
+        },
+        "tooling": {
+          "type": "array",
+          "description": "Ferramentas de build, lint, teste, etc.",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "architecture": {
+      "type": "object",
+      "description": "Visão de arquitetura e estrutura do projeto.",
+      "additionalProperties": false,
+      "properties": {
+        "overview": {
+          "type": "string",
+          "description": "Resumo da arquitetura."
+        },
+        "principles": {
+          "type": "array",
+          "description": "Princípios inegociáveis de arquitetura.",
+          "items": { "type": "string" }
+        },
+        "structure": {
+          "type": "string",
+          "description": "Descrição da estrutura de pastas / módulos."
+        }
+      }
+    },
+    "conventions": {
+      "type": "object",
+      "description": "Convenções de código e processo.",
+      "additionalProperties": false,
+      "properties": {
+        "codeStyle": {
+          "type": "array",
+          "description": "Regras de estilo de código.",
+          "items": { "type": "string" }
+        },
+        "naming": {
+          "type": "array",
+          "description": "Convenções de nomenclatura.",
+          "items": { "type": "string" }
+        },
+        "testing": {
+          "type": "string",
+          "description": "Estratégia e ferramentas de teste."
+        },
+        "commits": {
+          "type": "string",
+          "description": "Convenção de mensagens de commit (ex.: Conventional Commits)."
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "description": "Comandos úteis do projeto.",
+      "items": {
+        "type": "object",
+        "required": ["command"],
+        "additionalProperties": false,
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "O comando em si (ex.: npm run dev)."
+          },
+          "description": {
+            "type": "string",
+            "description": "O que o comando faz."
+          }
+        }
+      }
+    }
+  }
+}
