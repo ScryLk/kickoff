@@ -29,25 +29,33 @@ Estes não se negociam. Mudança aqui exige decisão explícita, não acontece d
 
 ## Estrutura
 
+Layout do electron-vite (main / preload / renderer), com `core` e `shared`
+como irmãos:
+
 ```
-/
-├── electron/              # processo main
-│   ├── main.ts            # cria a janela, ciclo de vida do app
-│   ├── preload.ts         # contextBridge: expõe API segura ao renderer
-│   └── ipc/               # handlers IPC (abrir pasta, ler/salvar/validar manifesto)
-├── src/                   # renderer (React)
-│   ├── core/              # MOTOR — zero dep de Electron/React, funções puras
-│   │   ├── schema/        # manifest.schema.json + tipos TS
-│   │   ├── validation/    # validação via Ajv
-│   │   └── transpilers/   # manifesto -> CLAUDE.md / AGENTS.md / prompt / ...
-│   ├── wizard/            # steps do stepper
-│   ├── components/        # componentes de UI
-│   ├── store/             # estado da aplicação
-│   └── App.tsx
-└── manifest.schema.json   # schema canônico (v0.1.0)
+src/
+├── main/                  # processo Node — único que toca fs e segredos
+│   ├── index.ts           # cria a janela, ciclo de vida do app
+│   ├── store.ts           # leitura/escrita de arquivos no userData
+│   └── ipc/               # handlers IPC: project, settings, secrets
+├── preload/               # contextBridge: expõe window.kickoff ao renderer
+├── renderer/              # UI React (telas, wizard, painel de preview/export)
+│   └── src/
+│       ├── state/         # store do app (AppProvider/useApp)
+│       ├── screens/       # Home, Workspace, Onboarding
+│       ├── workspace/     # stepper, formulário, painel de preview
+│       └── components/    # UI compartilhada (marca, modal, primitivas)
+├── core/                  # MOTOR — zero dep de Electron/React, funções puras
+│   ├── schema/            # manifest.schema.json + tipos TS
+│   ├── validation/        # validação via Ajv
+│   └── transpilers/       # manifesto -> CLAUDE.md / AGENTS.md / prompt / ...
+└── shared/                # contrato IPC + catálogo de provedores (sem Electron)
 ```
 
-A regra mental: se um arquivo em `src/core` importar algo de Electron ou React, está errado.
+A regra mental: se um arquivo em `src/core` importar algo de Electron ou React,
+está errado. E como o renderer roda sob CSP (`script-src 'self'`, sem
+`unsafe-eval`), ele não importa o barril `@core` (o Ajv gera código em runtime):
+usa os subpaths `@core/schema` e `@core/transpilers` e valida pelo main via IPC.
 
 ## Comandos
 
@@ -72,15 +80,25 @@ Confirme os comandos reais no `package.json` antes de rodar.
 
 ## Estado atual
 
-- Schema do manifesto definido (`manifest.schema.json`, v0.1.0).
-- Tipos TypeScript prontos (`manifest.types.ts`).
-- Exemplo preenchido validado (QuestBoard).
+- Scaffold electron-vite (React + TS) rodando; janela com a UI importada do Design.
+- Core: schema (`manifest.schema.json`, v0.1.0) + tipos, validação Ajv e
+  transpiler `manifesto -> CLAUDE.md`, cobertos por testes (Vitest).
+- Ponte main/IPC: abrir pasta, ler/salvar/validar `project-manifest.json` e
+  gravar artefatos; provedor de IA + API key cifrada via `safeStorage`; testar
+  conexão. Tudo exposto por `window.kickoff` (contextBridge).
+- Todos os passos do wizard ponta a ponta (Meta, Stack, Estrutura, Convenções,
+  Princípios, Próximos passos): editam o manifesto, validam e auto-salvam.
+- Quatro transpilers: CLAUDE.md, AGENTS.md, regras do Cursor e bloco de prompt,
+  com copiar/salvar na aba Export.
+- Assistência por IA opt-in ("me ajuda a preencher") usando a chave do usuário.
+- Projetos recentes reais persistidos no userData.
 
 ## Próximos passos
 
-1. Transpiler `manifesto -> CLAUDE.md` (prova o valor: entra JSON, sai contexto pronto).
-2. Esqueleto Electron + Vite + React rodando (janela com hello world).
-3. Primeiro step do wizard ponta a ponta (preenche `meta`, salva no disco, valida).
+1. Empacotamento e ícones por SO (build:win/mac/linux) verificados em CI.
+2. Importar logo do projeto (caminho de arquivo, princípio nº5) no passo Meta.
+3. Edição de `commands` e `product` no wizard (já existem no schema).
+4. Internacionalização e tema claro (o toggle existe, falta aplicar).
 
 ## Decisões já tomadas
 
